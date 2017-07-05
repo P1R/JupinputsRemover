@@ -1,31 +1,35 @@
 #!/usr/bin/env python3
-#import pdb; pdb.set_trace()
+
 from nbconvert import HTMLExporter
 from io import StringIO
+from argparse import ArgumentParser
+from os.path import splitext
 
-def CleanHTML(InFile):
+def getArgs():
+    parser = ArgumentParser()
+    parser.add_argument('filename')
+    return parser.parse_args()
+
+def CleanHTML(filename):
     '''Elimina inputs de htmls de jupyter'''
     #seccion que convierte a HTML un python NoteBook
     exporter = HTMLExporter(template_file='full.tpl')
-    output, resources = exporter.from_filename(InFile)
+    output, resources = exporter.from_filename(filename)
     output = StringIO(output)
-    #state flag 
-    state = 0
-    #Solo imprime si se encuentra afuera de un class=input div 
-    for line  in output:
-        if '<div class="input">' in line:
-            state = 1
-            pass
-        elif '<div class="output_wrapper">' in  line:
-            state = 0
-
-        if state == 0:
-            print(line)
-
+    #Solo escribe lo que se encuentra afuera de un div class="input"
+    text = output.read()
+    init = text.find('<div class="input">')
+    fin = text.find('<div class="output_wrapper">')
+    
+    res = text[:init] + text[fin:]
+    
+    outName = splitext(filename)[0] + '.html'
+    with open(outName, 'w') as outFile:
+        outFile.write(res)
+    
 def main():
-    #Ejemplo parametro es Python NoteBook
-    #Uso: ./JupInRem.py > out.html
-    CleanHTML('YourNoteBook.ipynb')
+    args = getArgs()
+    CleanHTML(args.filename)
 
 if __name__ == '__main__':
     main()
